@@ -140,7 +140,7 @@ const contractAddrs = {
   31337: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 }
 
-export function useSponsoredGreeting({ contractAddr, chainId }) {
+const useSponsoredGreeting = ({ contractAddr, chainId }) => {
   const { address: account } = useAccount()
 
   const { signTypedDataAsync } = useSignTypedData()
@@ -252,12 +252,18 @@ const Greeter = () => {
 
   const { writeContract } = useWriteContract()
 
-  const sponsorGreeting = async () => {
+  const sponsoredGreeting = async () => {
     try {
-      const signedReq = await signGreeting(newGreeting)
-      console.log("Signed request:", signedReq)
+      const signedTxn = await signGreeting(newGreeting)
+      const response = await fetch("/server/sponsor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(signedTxn),
+      })
+      const data = await response.json()
+      console.log("Server response:", data)
     } catch (err) {
-      console.error("Error signing greeting:", err)
+      console.error("Error:", err)
     }
   }  
 
@@ -281,7 +287,7 @@ const Greeter = () => {
       </button>
       <br />
       <button disabled={!canSimulate}
-              onClick={sponsorGreeting}
+              onClick={sponsoredGreeting}
       >
         Update greeting via sponsor
       </button>
