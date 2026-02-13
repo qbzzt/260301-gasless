@@ -12,7 +12,7 @@ contract Greeter {
     bytes32 private constant GREETING_TYPEHASH =
         keccak256("GreetingRequest(string greeting)");
 
-    bytes32 public DOMAIN_SEPARATOR;   // explain why not immutable
+    bytes32 immutable DOMAIN_SEPARATOR;
 
     struct GreetingRequest {
         string greeting;
@@ -41,6 +41,10 @@ contract Greeter {
     function setGreeting(string memory _greeting) public {
         greeting = _greeting;
         emit SetGreeting(msg.sender, _greeting);
+    }
+
+    // Don't do anything, just to deal with WAGMI probes
+    fallback() external {
     }
 
     // -----------------------------

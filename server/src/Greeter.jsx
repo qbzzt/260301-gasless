@@ -6,7 +6,6 @@ import {
 import {  useChainId, 
           useAccount,
           useReadContract, 
-          useSimulateContract,
           useWriteContract,
           useWatchContractEvent,
           useSignTypedData
@@ -136,8 +135,8 @@ let greeterABI = [
 
 
 const contractAddrs = {
-  // Anvil
-  31337: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+  // Sepolia
+    11155111: '0xC87506C66c7896366b9E988FE0aA5B6dDE77CFfA'
 }
 
 const useSponsoredGreeting = ({ contractAddr, chainId }) => {
@@ -233,23 +232,11 @@ const Greeter = () => {
   const greetingChange = (evt) =>
     setNewGreeting(evt.target.value)
 
-  const canSimulate =
+  const canUpdateGreeting =
     greeterAddr &&
     account &&
     newGreeting.trim().length > 0
   
-  const sim = useSimulateContract(
-    canSimulate ? {
-        address: greeterAddr,
-        abi: greeterABI,
-        functionName: 'setGreeting',
-        args: [newGreeting],
-        chainId,
-        account: account.address,
-      }
-      : undefined
-    )
-
   const { writeContract } = useWriteContract()
 
   const sponsoredGreeting = async () => {
@@ -280,13 +267,19 @@ const Greeter = () => {
         onChange={greetingChange}      
       />
       <br />
-      <button disabled={!sim || !sim.data || !sim.data.request}
-              onClick={() => writeContract(sim.data.request)}
+      <button disabled={!canUpdateGreeting}
+              onClick={() => writeContract({
+                address: greeterAddr,
+                abi: greeterABI,
+                functionName: "setGreeting",
+                args: [newGreeting],
+                account: account.address
+              })}
       >
         Update greeting directly
       </button>
       <br />
-      <button disabled={!canSimulate}
+      <button disabled={!canUpdateGreeting}      
               onClick={sponsoredGreeting}
       >
         Update greeting via sponsor

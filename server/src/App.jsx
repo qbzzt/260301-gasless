@@ -10,45 +10,22 @@ function WalletButton() {
   const { connectors, connect } = useConnect()
   const { disconnect } = useDisconnect()
 
-  const addHardhatChain = async () => {
-    await window.ethereum.request({
-      method: "wallet_addEthereumChain",
-      params: [
-        {
-          chainId: "0x7A69", // 31337
-          chainName: "Hardhat Local",
-          rpcUrls: ["http://127.0.0.1:8545"],
-          nativeCurrency: {
-            name: "ETH",
-            symbol: "ETH",
-            decimals: 18,
-          },
-        },
-      ],
-    })
-  }
-
-  const switchToHardhat = async () => {
+  const switchToSepolia = async () => {
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x7A69" }], // 31337
+        params: [{ chainId: "0xaa36a7" }], // 11155111
       })
     } catch (err) {
-      // If the chain is not added, MetaMask throws error 4902
-      if (err.code === 4902) {
-        await addHardhatChain()
-      } else {
-        console.error(err)
-      }
+      console.error(err)
     }
   }
 
   console
 
   useEffect(() => {
-    if (isConnected && chainId !== 31337) {
-      switchToHardhat()
+    if (isConnected && chainId !== 11155111) {
+      switchToSepolia()
     }
   }, [isConnected, chainId])
 

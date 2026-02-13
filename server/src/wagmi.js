@@ -1,16 +1,14 @@
 import { http, createConfig } from 'wagmi'
-import { mainnet, sepolia, hardhat } from 'wagmi/chains'
+import { sepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 export const config = createConfig({
-  chains: [mainnet, sepolia, hardhat],
+  chains: [sepolia],
   connectors: [
     injected(), // MetaMask, Brave, Coinbase extension, etc.
   ],
   transports: {
-    [mainnet.id]: http(),
     [sepolia.id]: http(),
-    [hardhat.id]: http('http://127.0.0.1:8545'),
   },
   multiInjectedProviderDiscovery: false,
   pollingInterval: 1000,    // Necessary for HTTP polling
