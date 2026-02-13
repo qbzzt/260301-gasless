@@ -1,171 +1,210 @@
 import { useState } from 'react'
-import {  useNetwork, 
-          useContractRead, 
-          usePrepareContractWrite, 
-          useContractWrite, 
+import {  useChainId, 
+          useAccount,
+          useReadContract, 
+          useSimulateContract,
+          useWriteContract,
+          useWaitForTransactionReceipt
         } from 'wagmi'
 
 
 let greeterABI = [
   {
+    "type": "constructor",
     "inputs": [
       {
-        "internalType": "string",
         "name": "_greeting",
-        "type": "string"
+        "type": "string",
+        "internalType": "string"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "stateMutability": "nonpayable"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "greeting",
-        "type": "string"
-      }
-    ],
-    "name": "SetGreeting",
-    "type": "event"
-  },
-  {
+    "type": "function",
+    "name": "DOMAIN_SEPARATOR",
     "inputs": [],
-    "name": "greet",
     "outputs": [
       {
-        "internalType": "string",
         "name": "",
-        "type": "string"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [
+    "type": "function",
+    "name": "greet",
+    "inputs": [],
+    "outputs": [
       {
-        "internalType": "string",
-        "name": "_greeting",
-        "type": "string"
+        "name": "",
+        "type": "string",
+        "internalType": "string"
       }
     ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "greeting",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "setGreeting",
+    "inputs": [
+      {
+        "name": "_greeting",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sponsoredSetGreeting",
+    "inputs": [
+      {
+        "name": "req",
+        "type": "tuple",
+        "internalType": "struct Greeter.GreetingRequest",
+        "components": [
+          {
+            "name": "greeting",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "v",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "r",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "s",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "SetGreeting",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "greeting",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
   }
-]   // greeterABI
+]  // greeterABI
 
 
 
 
 const contractAddrs = {
-  // Sepolia
-  11155111: '0x7143d5c190F048C8d19fe325b748b081903E3BF0'
+  // Anvil
+  31337: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 }
 
 
 const Greeter = () => {  
-  const { chain } = useNetwork()
+  const chainId = useChainId()
+  const account = useAccount()
 
-  const greeterAddr = chain && contractAddrs[chain.id] 
+  const greeterAddr = chainId && contractAddrs[chainId] 
 
-  const readResults = useContractRead({
+  const readResults = useReadContract({
     address: greeterAddr,
     abi: greeterABI,
     functionName: "greet", // No arguments
-    watch: true
+    watch: false,
+    chainId
   })
-
-  console.log(`readResults result:${readResults.data}`)
 
   const [ currentGreeting, setCurrentGreeting ] = 
     useState(readResults.data)
-  const [ currentChain, setCurrentChain ] =
-    useState(chain.id)
 
   if (currentGreeting != readResults.data)
     setCurrentGreeting(readResults.data)
 
   const [ newGreeting, setNewGreeting ] = useState("")
 
-  const greetingChange = (evt) => 
+  const greetingChange = (evt) =>
     setNewGreeting(evt.target.value)
 
-  const preparedTx = usePrepareContractWrite({
-    address: greeterAddr,
-    abi: greeterABI,
-    functionName: 'setGreeting',
-    args: [ newGreeting ]
-  })
-  const workingTx = useContractWrite(preparedTx.config)
+  const canSimulate =
+    greeterAddr &&
+    account &&
+    newGreeting.trim().length > 0
+  
+  const sim = useSimulateContract(
+    canSimulate ? {
+        address: greeterAddr,
+        abi: greeterABI,
+        functionName: 'setGreeting',
+        args: [newGreeting],
+        chainId,
+        account: account.address,
+      }
+      : undefined
+    )
+
+  const { writeContract, data: writeHash } = useWriteContract()
+
+  console.log(writeHash)
 
   return (
     <>
       <h2>Greeter</h2>
       {
         !readResults.isError && !readResults.isLoading &&
-          <ShowGreeting greeting={readResults.data} />
+          readResults.data
       }
-      <hr />
-
-      <input type="text" 
+      <hr />      
+      <input type="text"
         value={newGreeting}
-        onChange={greetingChange}
+        onChange={greetingChange}      
       />
-
-      <button disabled={!workingTx.write}
-              onClick={workingTx.write}
+      <br />
+      <button disabled={!sim || !sim.data || !sim.data.request}
+              onClick={() => writeContract(sim.data.request)}
       >
         Update greeting
-      </button>
-      <hr />
-      <ShowObject name="readResults" object={readResults} />
-      <ShowObject name="preparedTx" object={preparedTx} />
-      <ShowObject name="workingTx" object={workingTx} />
+      </button>      
     </>
   )
 }
 
-
-
-
-const ShowGreeting = (attrs) => {
-  return <b>{attrs.greeting}</b>
-}
-
-
-const ShowObject = (attrs) => {
-  const keys = Object.keys(attrs.object)
-  const funs = keys.filter(k => typeof attrs.object[k] == "function")
-  return <>
-    <details>
-      <summary>{attrs.name}</summary>
-      <pre>
-        {JSON.stringify(attrs.object, null, 2)}
-      </pre>
-      { funs.length > 0 &&
-        <>
-          Functions:
-          <ul>
-          {funs.map((f, i) => 
-           (<li key={i}>{f}</li>)
-                )}
-          </ul>
-        </>
-      }
-    </details>
-  </>
-}
 
 
 export {Greeter}
