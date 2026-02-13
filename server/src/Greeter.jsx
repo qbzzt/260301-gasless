@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { 
+          useState, 
+          useEffect,
+          useCallback, 
+        } from 'react'
 import {  useChainId, 
           useAccount,
           useReadContract, 
           useSimulateContract,
           useWriteContract,
-          useWaitForTransactionReceipt
+          useWatchContractEvent,
+          useSignTypedData
         } from 'wagmi'
-
 
 let greeterABI = [
   {
@@ -136,6 +140,54 @@ const contractAddrs = {
   31337: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 }
 
+export function useSponsoredGreeting({ contractAddr, chainId }) {
+  const { address: account } = useAccount()
+
+  const { signTypedDataAsync } = useSignTypedData()
+
+  const signGreeting = useCallback(
+    async (greeting) => {
+      if (!account) throw new Error("Wallet not connected")
+
+      const domain = {
+        name: "Greeter",
+        version: "1",
+        chainId,
+        verifyingContract: contractAddr,
+      }
+
+      const types = {
+        GreetingRequest: [
+          { name: "greeting", type: "string" },
+        ],
+      }
+
+      const message = { greeting }
+
+      const signature = await signTypedDataAsync({
+        domain,
+        types,
+        primaryType: "GreetingRequest",
+        message,
+      })
+
+      const r = `0x${signature.slice(2, 66)}`
+      const s = `0x${signature.slice(66, 130)}`
+      const v = parseInt(signature.slice(130, 132), 16)
+
+      return {
+        req: { greeting },
+        v,
+        r,
+        s,
+      }
+    },
+    [account, chainId, contractAddr, signTypedDataAsync],
+  )
+
+  return { signGreeting }
+}
+
 
 const Greeter = () => {  
   const chainId = useChainId()
@@ -143,21 +195,40 @@ const Greeter = () => {
 
   const greeterAddr = chainId && contractAddrs[chainId] 
 
+  const { signGreeting } = useSponsoredGreeting({
+    contractAddr: greeterAddr,
+    chainId,
+  })
+
+
   const readResults = useReadContract({
     address: greeterAddr,
     abi: greeterABI,
     functionName: "greet", // No arguments
-    watch: false,
+    watch: true,
     chainId
   })
 
   const [ currentGreeting, setCurrentGreeting ] = 
     useState(readResults.data)
-
-  if (currentGreeting != readResults.data)
-    setCurrentGreeting(readResults.data)
-
   const [ newGreeting, setNewGreeting ] = useState("")
+
+  useEffect(() => {
+    if (readResults.data) {
+      setCurrentGreeting(readResults.data)
+    }
+  }, [readResults.data])
+
+  useWatchContractEvent({
+    address: greeterAddr,
+    abi: greeterABI,
+    eventName: 'SetGreeting',
+    chainId,
+    onLogs(logs) {
+      const greetingFromContract = logs[0].args.greeting
+      setCurrentGreeting(greetingFromContract)
+    },
+  })
 
   const greetingChange = (evt) =>
     setNewGreeting(evt.target.value)
@@ -179,16 +250,23 @@ const Greeter = () => {
       : undefined
     )
 
-  const { writeContract, data: writeHash } = useWriteContract()
+  const { writeContract } = useWriteContract()
 
-  console.log(writeHash)
+  const sponsorGreeting = async () => {
+    try {
+      const signedReq = await signGreeting(newGreeting)
+      console.log("Signed request:", signedReq)
+    } catch (err) {
+      console.error("Error signing greeting:", err)
+    }
+  }  
 
   return (
     <>
       <h2>Greeter</h2>
       {
         !readResults.isError && !readResults.isLoading &&
-          readResults.data
+          currentGreeting
       }
       <hr />      
       <input type="text"
@@ -199,8 +277,14 @@ const Greeter = () => {
       <button disabled={!sim || !sim.data || !sim.data.request}
               onClick={() => writeContract(sim.data.request)}
       >
-        Update greeting
-      </button>      
+        Update greeting directly
+      </button>
+      <br />
+      <button disabled={!canSimulate}
+              onClick={sponsorGreeting}
+      >
+        Update greeting via sponsor
+      </button>
     </>
   )
 }
