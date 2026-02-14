@@ -211,6 +211,7 @@ const Greeter = () => {
   const [ currentGreeting, setCurrentGreeting ] = 
     useState("Loading...")
   const [ newGreeting, setNewGreeting ] = useState("")
+  const [ lastSetterAddress, setLastSetterAddress ] = useState("")
 
   useEffect(() => {
     if (readResults.data) {
@@ -227,6 +228,7 @@ const Greeter = () => {
       onLogs(logs) {
         const greetingFromContract = logs[0].args.greeting
         setCurrentGreeting(greetingFromContract)
+        setLastSetterAddress(logs[0].args.sender)
       },
     })
   }
@@ -260,6 +262,9 @@ const Greeter = () => {
     <>
       <h2>Greeter</h2>
       {readResults.isLoading ? "Loading..." : currentGreeting}
+      {lastSetterAddress && (
+        <p>Last updated by: {lastSetterAddress}</p>
+      )}
       <hr />      
       <input type="text"
         value={newGreeting}

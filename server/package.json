@@ -10,6 +10,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
     "@wagmi/core": "^3.3.3",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
