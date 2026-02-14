@@ -1,15 +1,18 @@
-import { http, createConfig } from 'wagmi'
+import { http, webSocket, createConfig, fallback } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 export const config = createConfig({
   chains: [sepolia],
   connectors: [
-    injected(), // MetaMask, Brave, Coinbase extension, etc.
+    injected(),
   ],
   transports: {
-    [sepolia.id]: http(),
+    [sepolia.id]: fallback([
+      webSocket("wss://ethereum-sepolia-rpc.publicnode.com"), 
+      http("https://ethereum-sepolia.gateway.tatum.io")
+    ]),
   },
   multiInjectedProviderDiscovery: false,
-  pollingInterval: 1000,    // Necessary for HTTP polling
 })
+

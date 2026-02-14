@@ -209,7 +209,7 @@ const Greeter = () => {
   })
 
   const [ currentGreeting, setCurrentGreeting ] = 
-    useState(readResults.data)
+    useState("Loading...")
   const [ newGreeting, setNewGreeting ] = useState("")
 
   useEffect(() => {
@@ -218,16 +218,18 @@ const Greeter = () => {
     }
   }, [readResults.data])
 
-  useWatchContractEvent({
-    address: greeterAddr,
-    abi: greeterABI,
-    eventName: 'SetGreeting',
-    chainId,
-    onLogs(logs) {
-      const greetingFromContract = logs[0].args.greeting
-      setCurrentGreeting(greetingFromContract)
-    },
-  })
+  if (greeterAddr) {
+    useWatchContractEvent({
+      address: greeterAddr,
+      abi: greeterABI,
+      eventName: 'SetGreeting',
+      chainId,
+      onLogs(logs) {
+        const greetingFromContract = logs[0].args.greeting
+        setCurrentGreeting(greetingFromContract)
+      },
+    })
+  }
 
   const greetingChange = (evt) =>
     setNewGreeting(evt.target.value)
@@ -257,10 +259,7 @@ const Greeter = () => {
   return (
     <>
       <h2>Greeter</h2>
-      {
-        !readResults.isError && !readResults.isLoading &&
-          currentGreeting
-      }
+      {readResults.isLoading ? "Loading..." : currentGreeting}
       <hr />      
       <input type="text"
         value={newGreeting}
