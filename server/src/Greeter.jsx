@@ -245,11 +245,11 @@ const Greeter = () => {
 
   const sponsoredGreeting = async () => {
     try {
-      const signedTxn = await signGreeting(newGreeting)
+      const signedMessage = await signGreeting(newGreeting)
       const response = await fetch("/server/sponsor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signedTxn),
+        body: JSON.stringify(signedMessage),
       })
       const data = await response.json()
       console.log("Server response:", data)
