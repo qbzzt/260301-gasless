@@ -219,7 +219,27 @@ const Greeter = () => {
     } catch (err) {
       console.error("Error:", err)
     }
-  }  
+  } 
+
+  const badSponsoredGreeting = async () => {
+    try {
+      const response = await fetch("/server/sponsor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            req: { greeting: newGreeting },
+            v: 27,
+            r: '0x98e0ebea250d8173e43415396c960a76ca0a596e8873f550a355aa3493153fce',
+            s: '0x2ece3acbc93367931feaa57f32b2b90ff158b22aa16e7839cd26937eb7442261'
+          }),
+      })
+      const data = await response.json()
+      console.log("Server response:", data)
+    } catch (err) {
+      console.error("Error:", err)
+    }
+  } 
+  
 
   return (
     <>
@@ -250,6 +270,12 @@ const Greeter = () => {
               onClick={sponsoredGreeting}
       >
         Update greeting via sponsor
+      </button>
+      <hr />
+      <button disabled={!canUpdateGreeting}
+              onClick={badSponsoredGreeting}
+      >
+        Bad signature
       </button>
     </>
   )
