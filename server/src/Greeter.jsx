@@ -13,45 +13,8 @@ import {  useChainId,
 
 let greeterABI = [
   {
-    "type": "constructor",
-    "inputs": [
-      {
-        "name": "_greeting",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "DOMAIN_SEPARATOR",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
     "type": "function",
     "name": "greet",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "greeting",
     "inputs": [],
     "outputs": [
       {
