@@ -70,6 +70,8 @@ const start = async () => {
         args: [signed.req, signed.v, signed.r, signed.s],
       })
 
+      console.log(`To see the transaction: https://eth-sepolia.blockscout.com/tx/${txHash}`)
+
       res.json({ txHash })
     } catch (err) {
       console.error(err)
