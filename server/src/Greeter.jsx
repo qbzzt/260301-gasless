@@ -8,7 +8,8 @@ import {  useChainId,
           useReadContract, 
           useWriteContract,
           useWatchContractEvent,
-          useSignTypedData
+          useSignTypedData,
+          useSimulateContract
         } from 'wagmi'
 
 let greeterABI = [
@@ -221,7 +222,7 @@ const Greeter = () => {
     }
   } 
 
-  const badSponsoredGreeting = async () => {
+  const invalidSignature = async () => {
     try {
       const response = await fetch("/server/sponsor", {
         method: "POST",
@@ -229,8 +230,8 @@ const Greeter = () => {
         body: JSON.stringify({
             req: { greeting: newGreeting },
             v: 27,
-            r: '0x98e0ebea250d8173e43415396c960a76ca0a596e8873f550a355aa3493153fce',
-            s: '0x2ece3acbc93367931feaa57f32b2b90ff158b22aa16e7839cd26937eb7442261'
+            r: '0x'.padEnd(66, '0'),
+            s: '0x'.padEnd(66, '0')
           }),
       })
       const data = await response.json()
@@ -239,7 +240,52 @@ const Greeter = () => {
       console.error("Error:", err)
     }
   } 
+
+  const wrongGreetingSignature = async () => {
+    try {
+      const response = await fetch("/server/sponsor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            req: { greeting: newGreeting == 'Hello' ? 'Not hello' : newGreeting},
+            v: 27,
+            r: '0x60834ebfcb9f4732775d83df5430173d719285102bb4fd25926cca27d95c6a7d',
+            s: '0x2265e2aa294c5ed32047b215649d666191b9c4930c47083584d5c56739dba8f3'
+          }),
+      })
+      const data = await response.json()
+      console.log("Server response:", data)
+    } catch (err) {
+      console.error("Error:", err)
+    }
+  }
   
+  const replayAttack = async () => {
+    try {
+      const response = await fetch("/server/sponsor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            req: { greeting: "Hello"},
+            v: 27,
+            r: '0x60834ebfcb9f4732775d83df5430173d719285102bb4fd25926cca27d95c6a7d',
+            s: '0x2265e2aa294c5ed32047b215649d666191b9c4930c47083584d5c56739dba8f3'
+          }),
+      })
+      const data = await response.json()
+      console.log("Server response:", data)
+    } catch (err) {
+      console.error("Error:", err)
+    }
+  }  
+
+  const simulation = useSimulateContract({
+    address: greeterAddr,
+    abi: greeterABI,
+    functionName: 'setGreeting',
+    args: [newGreeting],
+    account: account.address    
+  })
 
   return (
     <>
@@ -254,14 +300,10 @@ const Greeter = () => {
         onChange={greetingChange}      
       />
       <br />
-      <button disabled={!canUpdateGreeting}
-              onClick={() => writeContract({
-                address: greeterAddr,
-                abi: greeterABI,
-                functionName: "setGreeting",
-                args: [newGreeting],
-                account: account.address
-              })}
+      <button disabled={!simulation.data}
+              onClick={() => writeContract(
+                simulation.data.request
+              )}
       >
         Update greeting directly
       </button>
@@ -272,10 +314,19 @@ const Greeter = () => {
         Update greeting via sponsor
       </button>
       <hr />
+      <h3>Attacks</h3>
       <button disabled={!canUpdateGreeting}
-              onClick={badSponsoredGreeting}
+              onClick={invalidSignature}
       >
-        Bad signature
+        Invalid signature
+      </button>      
+      <button disabled={!canUpdateGreeting}
+              onClick={wrongGreetingSignature}
+      >
+        Signature for wrong greeting
+      </button>
+      <button onClick={replayAttack}>
+        Replay attack
       </button>
     </>
   )
