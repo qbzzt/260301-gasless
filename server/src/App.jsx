@@ -21,8 +21,6 @@ function WalletButton() {
     }
   }
 
-  console
-
   useEffect(() => {
     if (isConnected && chainId !== 11155111) {
       switchToSepolia()
